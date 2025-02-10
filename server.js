@@ -1,11 +1,26 @@
 const express = require('express');
 const crypto = require('crypto'); // инструмент для работы с хэшами (нам нужен для формировани токена)
 const dotenv = require('dotenv'); // модуль для получения переменных с окружения проекта (глобальная переменная)
+const cors = require('cors');
 
 dotenv.config();
 
 const app = express();
 
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Access-Control-Allow-Private-Network'],
+    credentials: false
+}));
+
+app.use((req,res,next) => {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    next();
+})
+
+// app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 const KEY = process.env.SECRET_KEY;
@@ -61,7 +76,13 @@ app.post('/generateToken', (req, res) => {
         digest - метод для вывода результата, где hex - это формат вывода
         */
 
-        const validHash = crypto.createHmac('sha256', BOT_TOKEN).update(checkString).digest('hex');
+        const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+        /*
+        мы сначала создаем hmac, где ключом является WebAppData, и обновляем  мы hmac данными BOT_TOKEN
+        А потому этот hmac используем для создания хэша 
+        Сделано так ради безопасности данных 
+        */
+        const validHash = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
 
         if (validHash != hash) {
             return res.status(403).json({ error: 'Invalid initData signature!' });
