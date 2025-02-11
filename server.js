@@ -9,13 +9,9 @@ const app = express();
 
 app.use(cors({
     origin: '*',
-    // methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    // allowedHeaders: ['Content-Type', 'Authorization'],
-    // exposedHeaders: ['Access-Control-Allow-Private-Network'],
-    // credentials: false
 }));
 
-app.use((req,res,next) => {
+app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Private-Network', 'true');
     next();
 })
@@ -35,7 +31,7 @@ app.post('/sync', (req, res) => {
         return res.status(401).json({ error: 'The token is missing, access is prohibited!' });
     }
 
-    return res.status(200).json({ message: 'Synchronization with the database was successful!' });
+    return res.status(200).json({ status: 200, message: 'Synchronization with the database was successful!' });
 });
 
 // Генерация токена 
@@ -88,6 +84,8 @@ app.post('/generateToken', (req, res) => {
             return res.status(403).json({ error: 'Invalid initData signature!' });
         }
 
+        console.log("date:", new Date());
+        
         const tgID = JSON.parse(params.get('user')).id;
         const unixtime = Math.floor(Date.now() / 1000);
         const dataHash = `${tgID}${KEY}${unixtime}`;
