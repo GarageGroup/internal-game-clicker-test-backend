@@ -40,7 +40,32 @@ app.post('/sync', (req: Request, res: any) => {
     }
 });
 
+// app.post('/syncTestOne', (req: Request, res: any) => {
+//     const body: SyncRequestBody = req.body;
+
+//     if (!body.token) {
+//         return res.status(401).json({ error: 'The token is missing, access is prohibited!' });
+//     }
+
+//     setTimeout(() => {
+//         return res.status(200).json({ status: 200, message: 'All good! Test one passed!' });
+//     }, 5000)
+// });
+
+// app.post('/syncTestTwo', (req: Request, res: any) => {
+//     const body: SyncRequestBody = req.body;
+
+//     if (!body.token) {
+//         return res.status(401).json({ error: 'The token is missing, access is prohibited!' });
+//     }
+
+//     setTimeout(() => {
+//         return res.status(200).json({ status: 200, message: 'Test two executed successfully!' });
+//     }, 5000)
+// });
+
 app.post('/generateToken', (req: Request, res: any) => {
+    console.log('Я запустился!');
     const body: GenerateTokenRequestBody = req.body;
 
     if (!body.data) {
