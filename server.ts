@@ -1,10 +1,17 @@
 import express, { Request, Response, NextFunction } from 'express';
+
+/*Express — это  фреймворк для Node.js, которая упрощает, систематизирует и структурирует процесс создания сервера. 
+Она предоставляет удобные инструмент для работы с HTTP-запросами, маршрутизацией и другими аспектами веб-сервера. 
+Без Express пришлось бы использовать встроенный модуль Node.js http и писать гораздо больше кода для обработки запросов, маршрутов и других задач. 
+*/
+
 import crypto from 'crypto'; // инструмент для работы с хэшами (нам нужен для формировани токена)
 import jwt from 'jsonwebtoken'; // инструмент для формирования и проверки валидности JWT-токена
 import dotenv from 'dotenv'; // модуль для получения переменных с окружения проекта (глобальная переменная)
 import cors from 'cors';
 
-import { SyncRequestBody, GenerateTokenRequestBody } from './state-model'
+import { SyncRequestBody, GenerateTokenRequestBody, BalanceRequestBody } from './state-model'
+import { randomUUID } from 'crypto';
 
 dotenv.config(); // вызов, который загружает все переменные из env в process.env
 
@@ -21,6 +28,9 @@ app.use((req: Request, res: Response, next: NextFunction) => { //то спосо
 const KEY = process.env.SECRET_KEY || '';
 const PORT = process.env.PORT;
 const BOT_TOKEN = process.env.BOT_TOKEN || '';
+const SECRET_KEY_KASSA = process.env.SECRET_KEY_KASSA;
+const ID_KASSA_SHOP = process.env.ID_KASSA_SHOP;
+const URL_KASSA = process.env.URL_KASSA || '';
 
 // Routes
 app.post('/sync', (req: Request, res: any) => {
@@ -138,6 +148,65 @@ app.post('/generateToken', (req: Request, res: any) => {
     } catch (error) {
         console.error('Error:', error);
         return res.status(400).json({ error: 'Invalid data format!' });
+    }
+});
+
+app.post('/payment', (req: Request, res: any) => {
+    console.log('Payment started in server');
+    const body: BalanceRequestBody = req.body;
+    console.log('Payment started', body.data.amountBalance);
+
+    const idempotenceKey = randomUUID();
+    const credentials = `${ID_KASSA_SHOP}:${SECRET_KEY_KASSA}`;
+    const encodedCredentials = Buffer.from(credentials).toString('base64');
+
+    const requestHeader = {
+        "Authorization": `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json",
+        "Idempotence-Key": idempotenceKey,
+    };
+
+    const requestBody =
+    {
+        "amount": {
+            "value": body.data.amountBalance,
+            "currency": "RUB"
+        },
+        "confirmation": {
+            "type": "redirect",
+            "return_url": "https://example.com/return-url"
+        },
+        "capture": true,
+        "description": body.data.type
+    };
+
+
+    // if (!body.token) {
+    //     return res.status(401).json({ error: 'The token is missing, access is prohibited!' });
+    // }
+
+    try {
+        fetch(URL_KASSA, {
+            method: 'POST',
+            headers: requestHeader,
+            body: JSON.stringify(requestBody)
+        })
+            .then((response: any) => {
+                return response.json();
+            })
+            .then((data: any) => {
+                console.log(data.confirmation.confirmation_url);
+                return res.status(200).json({
+                    status: 200,
+                    confirmationUrl: data.confirmation.confirmation_url
+                });
+            })
+            .catch((error) => {
+                return res.status(404).json({ error: error.message });
+            })
+    }
+    catch (error) {
+        return res.status(500).json({ error: 'Invalid server' });
     }
 });
 

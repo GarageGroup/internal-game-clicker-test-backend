@@ -5,3 +5,10 @@ export interface SyncRequestBody {
 export interface GenerateTokenRequestBody {
     data: string;
 }
+
+export interface BalanceRequestBody {
+    data: {
+        amountBalance: string;
+        type: string;
+    };
+}
